@@ -24,6 +24,7 @@ bool DS9097::Detect()
 	if( !port->isOpened() )
 		if(port->Open() != 1)
 			return false;
+
 	if( port->setSpeed( ComPort::eB9600) == -1 )
 		return false;
 
@@ -63,7 +64,7 @@ bool DS9097::setSpeed( ComPort::eSpeed newSpeed)
 	commandLen =0 ;
 	//формируем команду
 	if( currentMode != DS9097::CommandMode)
-		command[commandLen++] = 0xE3; // переключение в режим команд
+		command[commandLen++] = COMMAND_MODE; // переключение в режим команд
 	command[commandLen]= 0x71; // установка скорости
 	switch(newSpeed)
 	{
@@ -79,7 +80,7 @@ bool DS9097::setSpeed( ComPort::eSpeed newSpeed)
 		case ComPort::eB115200:
 			spd = 0x06;
 		break;
-		defalut:
+		default:
 			return false;
 	}
 	command[commandLen++] |= spd;
@@ -244,4 +245,48 @@ bool DS9097::WriteBit( unsigned char wBit)
 	if( ((wBit&0x1<<1)|(wBit&0x1)) != (responce[0]&0xFC) )
 		return false;
 	return true;
+}
+
+
+/*
+ * Метод поиска Slave устройств
+ */
+int DS9097::Serch()
+{
+	devises.clear();
+
+	ROM rom = 0;
+	try
+	{
+		Step( sizeof(ROM) , 0 , true , rom);
+	}
+	catch(...)
+	{
+		throw;
+	}
+
+	return rom.size();
+}
+
+void DS9097::Step( unsigned int currentStep , unsigned int romLen, bool newPass , ROM rom )
+{
+	// если необходимо пройти по битам сначала
+	if( newPass )
+	{
+		// сбрасываем
+		Reset();
+
+		// посылаем команду управления
+
+		// посылаем в устройство уже обнаруженную последовательность бит и читаем ответ
+		for( cycle = 0 ; cycle < romLen ; cycle++ )
+		{
+
+			if( !WriteBit( rom>>cycle&0x1) )
+				throw logic_error( string(" Cant write bit to IWire master device") );
+
+			if( !ReadBit(firstBit) || !ReadBit(firstBit))
+				throw logic_error( string(" Cant read responce bit from IWire master device") );
+		}
+	}
 }

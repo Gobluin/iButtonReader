@@ -39,8 +39,10 @@ class DS9097 : public IWireMasterDevice
 		bool ReadBitPower(unsigned char&){return false;};
 		bool WriteBitPower(unsigned char){return false;};
 
+		int	 Serch( );
 	protected:
 		unsigned char TouchByte( unsigned char ){return false;};
+		void Step(unsigned int, unsigned int , bool , ROM);
 
 	private:
 		ComPort 			*port;			// порт, к которому подсоеденён DS9097
@@ -51,6 +53,12 @@ class DS9097 : public IWireMasterDevice
 		unsigned char 		command[100];
 		unsigned char 		responce[100];
 		unsigned int  		commandLen;
+
+		// переменные для поиска данных
+		vector<ROM>		devises;
+		unsigned int	cycle;
+		unsigned char	firstBit;
+		unsigned char	secondBit;
 };
 
 #endif /* DS9097_H_ */

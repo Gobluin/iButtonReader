@@ -11,6 +11,7 @@ class IWire
 		enum PowerMode	{NormalMode , PowerDeliveryMode};
 };
 
+typedef long long ROM;
 
 class IWireMasterDevice
 {
