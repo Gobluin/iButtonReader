@@ -21,6 +21,7 @@ class IWireMasterDevice
 
 		// IWire Basic operations
 		virtual bool Reset() = 0;
+		virtual bool Search() = 0;
 
 		virtual bool ReadByte( unsigned char& ) = 0;
 		virtual bool WriteByte( unsigned char) = 0;

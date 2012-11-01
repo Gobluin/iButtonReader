@@ -152,6 +152,19 @@ bool DS9097::Reset()
 	return true;
 }
 
+bool DS9097::Search()
+{
+	commandLen = 0;
+
+	if( currentMode != DataMode )
+		command[commandLen++] = DATA_MODE;
+	command[commandLen++] = SEARCH_COMMAND;
+
+	if( port->Write( command , commandLen) )
+		return false;
+	currentMode = CommandMode;
+	return true;
+}
 /*
  * ћетод чтени€ данных из сети 1-Wire
  */
@@ -247,46 +260,41 @@ bool DS9097::WriteBit( unsigned char wBit)
 	return true;
 }
 
-
 /*
- * ћетод поиска Slave устройств
+ * ћетод чтени€ бита из сети 1-Wire
  */
-int DS9097::Serch()
+bool DS9097::ReadBit( unsigned char &wBit)
 {
-	devises.clear();
+	commandLen = 0;
 
-	ROM rom = 0;
-	try
+	if(currentMode != CommandMode)
+		command[commandLen++] = COMMAND_MODE;
+
+	switch(speed)
 	{
-		Step( sizeof(ROM) , 0 , true , rom);
+		case IWire::NormalSpeed :
+			command[commandLen ] = 0x81 | 0x04;
+		break;
+		case IWire::OverdriveSpeed:
+			command[commandLen ] = 0x81 | 0x08;
+		break;
 	}
-	catch(...)
-	{
-		throw;
-	}
 
-	return rom.size();
-}
+	command[commandLen++] |= (0x1<<4);
 
-void DS9097::Step( unsigned int currentStep , unsigned int romLen, bool newPass , ROM rom )
-{
-	// если необходимо пройти по битам сначала
-	if( newPass )
-	{
-		// сбрасываем
-		Reset();
+	port->Flush();
+	if(port->Write(command , commandLen) != 1)
+		return false;
 
-		// посылаем команду управлени€
+	currentMode = CommandMode;
 
-		// посылаем в устройство уже обнаруженную последовательность бит и читаем ответ
-		for( cycle = 0 ; cycle < romLen ; cycle++ )
-		{
+	if(port->Read(responce , 1) != 1)
+		return false;
 
-			if( !WriteBit( rom>>cycle&0x1) )
-				throw logic_error( string(" Cant write bit to IWire master device") );
+	if( (responce[0]&0xFC) != (command[commandLen -1] & 0xFC) )
+		return false;
 
-			if( !ReadBit(firstBit) || !ReadBit(firstBit))
-				throw logic_error( string(" Cant read responce bit from IWire master device") );
-		}
-	}
+	if( ((wBit&0x1<<1)|(wBit&0x1)) != (responce[0]&0xFC) )
+		return false;
+	return true;
 }
