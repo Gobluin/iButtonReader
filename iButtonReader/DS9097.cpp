@@ -24,6 +24,7 @@ bool DS9097::Detect()
 	if( !port->isOpened() )
 		if(port->Open() != 1)
 			return false;
+
 	if( port->setSpeed( ComPort::eB9600) == -1 )
 		return false;
 
@@ -63,7 +64,7 @@ bool DS9097::setSpeed( ComPort::eSpeed newSpeed)
 	commandLen =0 ;
 	//формируем команду
 	if( currentMode != DS9097::CommandMode)
-		command[commandLen++] = 0xE3; // переключение в режим команд
+		command[commandLen++] = COMMAND_MODE; // переключение в режим команд
 	command[commandLen]= 0x71; // установка скорости
 	switch(newSpeed)
 	{
@@ -79,7 +80,7 @@ bool DS9097::setSpeed( ComPort::eSpeed newSpeed)
 		case ComPort::eB115200:
 			spd = 0x06;
 		break;
-		defalut:
+		default:
 			return false;
 	}
 	command[commandLen++] |= spd;
@@ -151,6 +152,19 @@ bool DS9097::Reset()
 	return true;
 }
 
+bool DS9097::Search()
+{
+	commandLen = 0;
+
+	if( currentMode != DataMode )
+		command[commandLen++] = DATA_MODE;
+	command[commandLen++] = SEARCH_COMMAND;
+
+	if( port->Write( command , commandLen) )
+		return false;
+	currentMode = CommandMode;
+	return true;
+}
 /*
  * Метод чтения данных из сети 1-Wire
  */
@@ -244,4 +258,52 @@ bool DS9097::WriteBit( unsigned char wBit)
 	if( ((wBit&0x1<<1)|(wBit&0x1)) != (responce[0]&0xFC) )
 		return false;
 	return true;
+}
+
+/*
+ * Метод чтения бита из сети 1-Wire
+ */
+bool DS9097::ReadBit( unsigned char &rBit )
+{
+	commandLen = 0;
+
+	if(currentMode != CommandMode)
+		command[commandLen++] = COMMAND_MODE;
+
+	switch(speed)
+	{
+		case IWire::NormalSpeed :
+			command[commandLen ] = 0x81 | 0x04;
+		break;
+		case IWire::OverdriveSpeed:
+			command[commandLen ] = 0x81 | 0x08;
+		break;
+	}
+	// команда на чтение данных
+	command[commandLen++] |= (0x1<<4);
+
+	port->Flush();
+	if(port->Write(command , commandLen) != 1)
+		return false;
+
+	currentMode = CommandMode;
+
+	if(port->Read(responce , 1) != 1)
+		return false;
+
+	if( (responce[0]&0xFC) != (command[commandLen -1] & 0xFC) )
+		return false;
+
+	if( (responce[0]&0x3) == 0 )
+	{
+		rBit = 0;
+		return true;
+	}
+
+	if( (responce[0]&0x3) == 0x3 )
+	{
+		rBit = 1;
+		return true;
+	}
+	return false;
 }

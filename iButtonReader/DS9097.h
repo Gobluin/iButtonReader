@@ -10,6 +10,7 @@
 #define COMMAND_MODE 0xE3
 #define DATA_MODE 0xE1
 #define READ_SPEED_COMMAND 0x0F
+#define SEARCH_COMMAND 0xF0
 
 
 class DS9097 : public IWireMasterDevice
@@ -25,6 +26,7 @@ class DS9097 : public IWireMasterDevice
 		bool setSpeed(ComPort::eSpeed);
 
 		bool Reset();
+		bool Search( );
 
 		bool ReadByte( unsigned char& );
 		bool WriteByte( unsigned char){return false;};
@@ -39,8 +41,11 @@ class DS9097 : public IWireMasterDevice
 		bool ReadBitPower(unsigned char&){return false;};
 		bool WriteBitPower(unsigned char){return false;};
 
+
 	protected:
 		unsigned char TouchByte( unsigned char ){return false;};
+
+		int	SearchStep(unsigned int , bool , ROM);
 
 	private:
 		ComPort 			*port;			// порт, к которому подсоеденён DS9097
