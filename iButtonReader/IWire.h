@@ -1,6 +1,12 @@
 #ifndef IWIRE_H_
 #define IWIRE_H_
 
+#define ROM_LENGTH 64
+
+
+
+
+
 /*
  * Класс, описывающий основные параметры сети IWire
  */

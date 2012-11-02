@@ -307,3 +307,23 @@ bool DS9097::ReadBit( unsigned char &rBit )
 	}
 	return false;
 }
+
+
+
+
+int DS9097::SearchStep( unsigned int bitPosition , bool newSerch , ROM findedRom)
+{
+	if( bitPosition == ROM_LENGTH)
+	{
+		foundedRom.pushBack(findedRom);
+		return SEARCH_OK;
+	}
+
+	commandLen = 0 ;
+	if( currentMode != DataMode)
+		command[commandLen++] = DATA_MODE;
+
+	command[commandLen++] = SEARCH_COMMAND;
+	command[commandLen++] = COMMAND_MODE;
+	command[commandLen++] =
+}

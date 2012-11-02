@@ -10,8 +10,13 @@
 #define COMMAND_MODE 0xE3
 #define DATA_MODE 0xE1
 #define READ_SPEED_COMMAND 0x0F
-#define SEARCH_COMMAND 0xF0
 
+#define SEARCH_COMMAND 0xF0
+#define SEARCH_START 0xB5
+#define SEARCH_STOP 0xA5
+#define SEARCH_OK 1
+#define SEARCH_NODATA 0
+#define SEARCH_ERROR -1
 
 class DS9097 : public IWireMasterDevice
 {
@@ -56,6 +61,8 @@ class DS9097 : public IWireMasterDevice
 		unsigned char 		command[100];
 		unsigned char 		responce[100];
 		unsigned int  		commandLen;
+
+		vector<ROM>			foundedRom;
 };
 
 #endif /* DS9097_H_ */
