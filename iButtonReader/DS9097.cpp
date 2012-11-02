@@ -263,7 +263,7 @@ bool DS9097::WriteBit( unsigned char wBit)
 /*
  * ћетод чтени€ бита из сети 1-Wire
  */
-bool DS9097::ReadBit( unsigned char &wBit)
+bool DS9097::ReadBit( unsigned char &rBit )
 {
 	commandLen = 0;
 
@@ -279,7 +279,7 @@ bool DS9097::ReadBit( unsigned char &wBit)
 			command[commandLen ] = 0x81 | 0x08;
 		break;
 	}
-
+	// команда на чтение данных
 	command[commandLen++] |= (0x1<<4);
 
 	port->Flush();
@@ -294,7 +294,16 @@ bool DS9097::ReadBit( unsigned char &wBit)
 	if( (responce[0]&0xFC) != (command[commandLen -1] & 0xFC) )
 		return false;
 
-	if( ((wBit&0x1<<1)|(wBit&0x1)) != (responce[0]&0xFC) )
-		return false;
-	return true;
+	if( (responce[0]&0x3) == 0 )
+	{
+		rBit = 0;
+		return true;
+	}
+
+	if( (responce[0]&0x3) == 0x3 )
+	{
+		rBit = 1;
+		return true;
+	}
+	return false;
 }

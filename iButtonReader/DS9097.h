@@ -45,6 +45,8 @@ class DS9097 : public IWireMasterDevice
 	protected:
 		unsigned char TouchByte( unsigned char ){return false;};
 
+		int	SearchStep(unsigned int , bool , ROM);
+
 	private:
 		ComPort 			*port;			// порт, к которому подсоеденён DS9097
 		Mode				currentMode;	// режим, в котором работает DS9097
