@@ -1,12 +1,7 @@
 #ifndef IWIRE_H_
 #define IWIRE_H_
 
-#define ROM_LENGTH 64
-
-
-
-
-
+#include "rom.h"
 /*
  * Класс, описывающий основные параметры сети IWire
  */
@@ -17,7 +12,7 @@ class IWire
 		enum PowerMode	{NormalMode , PowerDeliveryMode};
 };
 
-typedef long long ROM;
+//typedef long long ROM;
 
 class IWireMasterDevice
 {
@@ -27,7 +22,7 @@ class IWireMasterDevice
 
 		// IWire Basic operations
 		virtual bool Reset() = 0;
-		virtual bool Search() = 0;
+		virtual int	 Search() = 0;
 
 		virtual bool ReadByte( unsigned char& ) = 0;
 		virtual bool WriteByte( unsigned char) = 0;
@@ -45,8 +40,18 @@ class IWireMasterDevice
 
 };
 
+
+/*контролируемое устройство в сети 1-Wire*/
 class IWireSlaveDevice
 {
+	public:
+		IWireSlaveDevice( IWireMasterDevice* _mDev, ROM& _rom ):rom(_rom) , mDev(_mDev){};
+		~IWireSlaveDevice(){};
+
+	protected:
+		IWireMasterDevice 	*mDev;
+		ROM					rom;
+
 
 };
 #endif /* IWIRE_H_ */

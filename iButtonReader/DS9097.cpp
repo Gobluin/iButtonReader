@@ -1,6 +1,7 @@
 #include "ds9097.h"
 #include <unistd.h>
 #include <string>
+#include <stdio.h>
 
 DS9097::DS9097( char* portName )
 {
@@ -111,7 +112,11 @@ bool DS9097::setSpeed( ComPort::eSpeed newSpeed)
 }
 
 
-
+IWireSlaveDevice* DS9097::getDevice( unsigned int deviveNumber)
+{
+	if( i > foundedDevices.size() )
+		return 0;
+}
 /* Сброс */
 bool DS9097::Reset()
 {
@@ -152,19 +157,20 @@ bool DS9097::Reset()
 	return true;
 }
 
-bool DS9097::Search()
+/*
+ * Метод поиска элементов;
+ */
+
+int DS9097::Search()
 {
-	commandLen = 0;
+	ROM rom;
+	if( SearchStep(0 , true , rom) == SEARCH_ERROR)
+		return SEARCH_ERROR;
 
-	if( currentMode != DataMode )
-		command[commandLen++] = DATA_MODE;
-	command[commandLen++] = SEARCH_COMMAND;
-
-	if( port->Write( command , commandLen) )
-		return false;
-	currentMode = CommandMode;
-	return true;
+	return foundedRom.size();
 }
+
+
 /*
  * Метод чтения данных из сети 1-Wire
  */
@@ -311,19 +317,84 @@ bool DS9097::ReadBit( unsigned char &rBit )
 
 
 
-int DS9097::SearchStep( unsigned int bitPosition , bool newSerch , ROM findedRom)
+int DS9097::SearchStep( unsigned int bitPosition , bool newRequest , ROM findedRom)
 {
+	// если дошли до конца длинны ROM - записываем полученное значение в массив полученных РОМ-ов
 	if( bitPosition == ROM_LENGTH)
 	{
-		foundedRom.pushBack(findedRom);
+		if( !findedRom.isValidCRC() )
+			return SEARCH_NODATA;
+		foundedRom.push_back(findedRom);
 		return SEARCH_OK;
 	}
 
-	commandLen = 0 ;
-	if( currentMode != DataMode)
-		command[commandLen++] = DATA_MODE;
+	// если взведён флаг нового запроса, то формируем новый запрос с полученными до битами
+	// отправляем его, и получаем ответ
+	if( newRequest)
+	{
+		if( !Reset() )
+			return SEARCH_ERROR;
 
-	command[commandLen++] = SEARCH_COMMAND;
-	command[commandLen++] = COMMAND_MODE;
-	command[commandLen++] =
+		commandLen = 0 ;
+		// если текущее состояние не режим данных
+		if( currentMode != DataMode)
+			command[commandLen++] = DATA_MODE;
+
+		// формируем запрос на поиск серийного номера
+		command[commandLen++] = SEARCH_COMMAND;
+		command[commandLen++] = COMMAND_MODE;
+		command[commandLen++] = SEARCH_START;
+		command[commandLen++] = DATA_MODE;
+		FillRequestData(command+commandLen,findedRom , bitPosition);
+		commandLen += 16;
+		command[commandLen++] = COMMAND_MODE;
+		command[commandLen++] = SEARCH_STOP;
+
+		// посылаем запрос
+		try
+		{
+			if(port->Write(command , commandLen) != 1)
+				return SEARCH_ERROR;
+			currentMode = CommandMode;
+
+			if( port->Read(responce , 17) != 17)
+				return SEARCH_ERROR;
+		}
+		catch(...)	{throw;}
+
+		if(responce[0] != SEARCH_COMMAND)
+			return SEARCH_ERROR;
+
+	}
+
+	posBit = ( responce[bitPosition/4+1]>>(2*(bitPosition%4)) ) & 0x3;
+	try
+	{
+		if((ret = SearchStep( bitPosition+1 , false , findedRom |((posBit>>1)<<bitPosition) )) == SEARCH_ERROR )
+			return SEARCH_ERROR;
+	}
+	catch(...){throw;}
+
+	posBit = ( responce[bitPosition/4+1]>>(2*(bitPosition%4)) ) & 0x3;
+	if( posBit & 0x1 )
+	{
+		try
+		{
+			return SearchStep( bitPosition+1 , true , findedRom |(((~posBit>>1)&0x1)<<bitPosition) );
+		}
+		catch(...){throw;}
+	}
+	return ret;
+}
+
+
+// метод заполнения данных в запрос
+int DS9097::FillRequestData(unsigned char* data, ROM& rom, int bit)
+{
+	bzero( data , 16);
+
+	for( int i = 0 ; i < bit ; i++)
+		data[ i/4] |= ( rom[i] << (2*(i%4)+1) );
+
+	return 1;
 }

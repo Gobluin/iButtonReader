@@ -1,9 +1,11 @@
 #ifndef DS9097_H_
 #define DS9097_H_
 
+// INCLUDES
+#include <vector>
 #include "ComPort.h"
 #include "IWire.h"
-
+#include "rom.h"
 
 // DEFINES
 #define TIMING_COMMAND 0xC1
@@ -18,6 +20,9 @@
 #define SEARCH_NODATA 0
 #define SEARCH_ERROR -1
 
+
+
+using namespace std;
 class DS9097 : public IWireMasterDevice
 {
 	public:
@@ -30,14 +35,16 @@ class DS9097 : public IWireMasterDevice
 		bool Detect();
 		bool setSpeed(ComPort::eSpeed);
 
+		IWireSlaveDevice* getDevice( unsigned int );
+
 		bool Reset();
-		bool Search( );
+		int	 Search( );
 
 		bool ReadByte( unsigned char& );
-		bool WriteByte( unsigned char){return false;};
+		bool WriteByte( unsigned char);
 
-		bool ReadBit( unsigned char&){return false;};
-		bool WriteBit( unsigned char){return false;};
+		bool ReadBit( unsigned char&);
+		bool WriteBit( unsigned char);
 
 		bool setPowerMode( IWire::PowerMode){return false;};
 		bool setSpeed(IWire::Speed){return false;};
@@ -51,6 +58,7 @@ class DS9097 : public IWireMasterDevice
 		unsigned char TouchByte( unsigned char ){return false;};
 
 		int	SearchStep(unsigned int , bool , ROM);
+		int FillRequestData(unsigned char* , ROM& , int);
 
 	private:
 		ComPort 			*port;			// порт, к которому подсоеденён DS9097
@@ -63,6 +71,8 @@ class DS9097 : public IWireMasterDevice
 		unsigned int  		commandLen;
 
 		vector<ROM>			foundedRom;
+		unsigned long long	posBit;
+		int					ret;
 };
 
 #endif /* DS9097_H_ */
