@@ -21,6 +21,8 @@ class ROM
 		ROM& operator& (unsigned long long);
 		ROM& operator| (unsigned long long);
 
+
+		// crc check function
 		bool isValidCRC();
 	protected :
 		union

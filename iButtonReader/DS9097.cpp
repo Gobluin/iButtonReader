@@ -1,7 +1,7 @@
 #include "ds9097.h"
 #include <unistd.h>
 #include <string>
-#include <stdio.h>
+#include <stdexcept>
 
 DS9097::DS9097( char* portName )
 {
@@ -112,11 +112,6 @@ bool DS9097::setSpeed( ComPort::eSpeed newSpeed)
 }
 
 
-IWireSlaveDevice* DS9097::getDevice( unsigned int deviveNumber)
-{
-	if( i > foundedDevices.size() )
-		return 0;
-}
 /* Сброс */
 bool DS9097::Reset()
 {
@@ -158,16 +153,32 @@ bool DS9097::Reset()
 }
 
 /*
- * Метод поиска элементов;
+ * Метод поиска элементов.
+ * На выходе получаем количество устройств в сети, либо -1 в случае ошибки
  */
 
-int DS9097::Search()
+int DS9097::Search( DeviceList& _list)
 {
 	ROM rom;
-	if( SearchStep(0 , true , rom) == SEARCH_ERROR)
-		return SEARCH_ERROR;
 
-	return foundedRom.size();
+	// отчищаем списки предыдущих данных
+	_list.clear();
+	foundedRom.clear();
+
+
+	try
+	{
+		// ищем данные
+		if( SearchStep(0 , true , rom) == SEARCH_ERROR)
+			return SEARCH_ERROR;
+
+
+		for( vector<ROM>::iterator i = foundedRom.begin(); i != foundedRom.end() ; ++i )
+			_list.push_back( IWireSlaveDevice(this , *i) );
+	}
+	catch(...){throw;}
+
+	return _list.size();
 }
 
 
@@ -266,6 +277,48 @@ bool DS9097::WriteBit( unsigned char wBit)
 	return true;
 }
 
+
+/**/
+bool DS9097::setPowerMode( IWire::PowerMode newMode)
+{
+	if( powerMode == newMode)
+		return true;
+
+	return false;
+}
+
+/*
+ * Установка скорости обмена данными в сети 1-wire
+ */
+bool DS9097::setSpeed( IWire::Speed newSpeed)
+{
+	if( speed == newSpeed)
+		return true;
+
+	commandLen = 0;
+	if( currentMode != CommandMode )
+		command[ commandLen++ ] = COMMAND_MODE;
+
+	switch( newSpeed )
+	{
+		case IWire::NormalSpeed :
+			if( !setSpeed(ComPort::eB9600) )
+				return false;
+			command[ commandLen++ ] = 0xA5;
+		break;
+		case IWire::OverdriveSpeed :
+			if( !setSpeed(ComPort::eB115200) )
+				return false;
+			command[ commandLen++ ] = 0xA9;
+		break;
+	}
+
+	port->Flush();
+	if( port->Write( command , commandLen) != 1)
+		return false;
+
+	return true;
+}
 /*
  * Метод чтения бита из сети 1-Wire
  */

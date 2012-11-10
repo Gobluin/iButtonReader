@@ -41,3 +41,4 @@ bool ROM::isValidCRC()
 
 	return crc == rom.parsed.crc;
 }
+

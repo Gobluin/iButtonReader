@@ -23,7 +23,7 @@
 
 
 using namespace std;
-class DS9097 : public IWireMasterDevice
+class DS9097 : public IWireNetwork
 {
 	public:
 		enum Mode{ DataMode = 0xE1 , CommandMode = 0xE3};
@@ -35,10 +35,8 @@ class DS9097 : public IWireMasterDevice
 		bool Detect();
 		bool setSpeed(ComPort::eSpeed);
 
-		IWireSlaveDevice* getDevice( unsigned int );
-
 		bool Reset();
-		int	 Search( );
+		int Search( DeviceList& );
 
 		bool ReadByte( unsigned char& );
 		bool WriteByte( unsigned char);
@@ -71,6 +69,7 @@ class DS9097 : public IWireMasterDevice
 		unsigned int  		commandLen;
 
 		vector<ROM>			foundedRom;
+		DeviceList		devices;
 		unsigned long long	posBit;
 		int					ret;
 };
