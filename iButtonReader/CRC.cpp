@@ -20,10 +20,30 @@ static unsigned char dscrc_table[] =
       116, 42,200,150, 21, 75,169,247,182,232, 10, 84,215,137,107, 53
 };
 
+static short oddparity[16] = { 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 0 };
+
 unsigned char Crc8(unsigned char previous , unsigned char data )
 {
 
 	previous = dscrc_table[ previous^data];
 
 	return previous ;
+}
+
+
+unsigned short Crc16(unsigned short previous, unsigned short data )
+{
+	
+	data = ( data ^ (previous&0xFF))&0xff;
+	previous >>= 8;
+
+	if(oddparity[data & 0xf] ^ oddparity[data >> 4] )
+		previous ^= 0xc001;
+
+	data <<= 6;
+	previous ^= data;
+	data <<= 1;
+	previous ^= data;
+
+	return previous;
 }

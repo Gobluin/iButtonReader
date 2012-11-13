@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <string>
 #include <stdexcept>
+#include "IWireElementCreator.h"
 
 DS9097::DS9097( char* portName )
 {
@@ -174,7 +175,7 @@ int DS9097::Search( DeviceList& _list)
 
 
 		for( vector<ROM>::iterator i = foundedRom.begin(); i != foundedRom.end() ; ++i )
-			_list.push_back( IWireSlaveDevice(this , *i) );
+			_list.push_back( IWireElementCreator::Create(*i,*this) );
 	}
 	catch(...){throw;}
 

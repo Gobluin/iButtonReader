@@ -44,8 +44,8 @@ class DS9097 : public IWireNetwork
 		bool ReadBit( unsigned char&);
 		bool WriteBit( unsigned char);
 
-		bool setPowerMode( IWire::PowerMode){return false;};
-		bool setSpeed(IWire::Speed){return false;};
+		bool setPowerMode( IWire::PowerMode);
+		bool setSpeed(IWire::Speed);
 		bool ProgramPulse(){return false;};
 
 		bool ReadBitPower(unsigned char&){return false;};
