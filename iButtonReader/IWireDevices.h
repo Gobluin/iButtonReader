@@ -18,20 +18,25 @@ class DS1977 : public IWireDevice
 	public:
 		IWire::Type Type(){ return IWire::eDS1977;};
 
-		int WriteScratchpad( unsigned short , unsigned char* , unsigned int);
 	private:
 		DS1977(IWireNetwork& net, ROM& _rom) : IWireDevice(net , _rom){};
 
 		// devise level functions
-
-		int ReadScratchpad( unsigned short , unsigned char* , unsigned int);
-		int CopyScratchpad();
+		int WriteScratchpad( unsigned short , unsigned char* , unsigned int);
+		int ReadScratchpad( unsigned char* , unsigned int);
+		int CopyScratchpad( unsigned char* , unsigned int);
 		int ReadMemory();
 		int VeryfyPassword();
 
 	private:
-		unsigned char password[8];
-		unsigned char bufer[BUFER_LEN];
+		unsigned char	password[8];
+		unsigned char	bufer[BUFER_LEN];
+		unsigned int	len;
+		unsigned char	esStatus;
+		unsigned char	scrAddres[2];
+		unsigned char	crc16[2];
+		unsigned char	password[8];
+
 		friend class IWireElementCreator;
 };
 

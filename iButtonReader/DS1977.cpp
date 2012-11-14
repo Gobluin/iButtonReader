@@ -26,8 +26,7 @@ int DS1977::WriteScratchpad( unsigned short addres, unsigned char* data, unsigne
 	if ( ((addres&0x3F)+dataLen) > SCRATCHPAD_LEN )
 		return 0;
 
-	unsigned int len = 0;
-
+	len = 0;
 	// инициализируем таблетку
 	if( !network->Reset() || (MatchRom() != 1) )
 		return -1;
@@ -62,10 +61,10 @@ int DS1977::WriteScratchpad( unsigned short addres, unsigned char* data, unsigne
 	}
 	calculatedCrc ^= 0xFFFF;
 	//читаем црц
-	if( (network->ReadByte( bufer[0])!= 1) || (network->ReadByte( bufer[1])!= 1))
+	if( (network->ReadByte( crc16[0])!= 1) || (network->ReadByte( crc16[1])!= 1))
 		return -1;
 
-	if( (bufer[0] != (calculatedCrc&0xff)) || (bufer[1] != (calculatedCrc>>8)) )
+	if( (crc16[0] != (calculatedCrc&0xff)) || (crc16[1] != (calculatedCrc>>8)) )
 		return 0;
 
 	if( !network->Reset() )
@@ -74,8 +73,84 @@ int DS1977::WriteScratchpad( unsigned short addres, unsigned char* data, unsigne
 	return 1;
 }
 
-int DS1977::ReadScratchpad( unsigned short , unsigned char* , unsigned int)
+
+
+int DS1977::ReadScratchpad(unsigned char* inBuf , unsigned int buferLen)
 {
+	// проверяем входные данные
+	if( (inBuf==0) || (buferLen==0) )
+		return -1;
+
+	// инициализируем таблетку
+	if( !network->Reset() || (MatchRom() != 1) )
+		return -1;
+
+	// посылаем команду на чтение
+	if( network->WriteByte(READ_SCRATCHPAD) != 1 )
+		return -1;
+
+	//читаем адрес и байт состояния
+	if( (network->ReadByte(scrAddres[0]) != 1) || (network->ReadByte(scrAddres[1]) != 1) || (network->ReadByte(esStatus) != 1))
+		return -1;
+
+	len = 0x3F - (((scrAddres[1]<<8)|scrAddres[0])&0x3F);
+
+	// читаем до конца данных, чтобы проверить данные с контрольной суммой
+	for( int i = 0 ; i < len ; ++i )
+	{
+		if( network->ReadByte( bufer[i]) != 1)
+			return -1;
+	}
+
+	//читаем црц
+	if( (network->ReadByte( crc16[0])!= 1) || (network->ReadByte( crc16[1])!= 1))
+		return -1;
+
+	// считаем црц полученных данных и сравниваем с полученным
+	unsigned short calculatedCrc = 0;
+	calculatedCrc = Crc16(calculatedCrc , scrAddres[0]);
+	calculatedCrc = Crc16(calculatedCrc , scrAddres[1]);
+	calculatedCrc = Crc16(calculatedCrc , esStatus);
+	for( int i =0 ; i< len ; ++i)
+		calculatedCrc = Crc16(calculatedCrc , bufer[i]);
+	// црц приходит в инвертированном виде, поэтому ддля сравнения инвертируем полученное црц
+	calculatedCrc ^= 0xFFFF;
+
+	// сравниваем црц
+	if( (crc16[0] != (calculatedCrc&0xff)) || (crc16[1] != (calculatedCrc>>8)) )
+		return 0;
+
+	//расчитываем реальное количество байт
+	len = (esStatus&0x3F) - (((scrAddres[1]<<8)|scrAddres[0])&0x3F);
+	//копируем прочитанные данные
+	for( int i = 0 ; i< (buferLen < len ? buferLen : len) ; ++i )
+		inBuf[i] = bufer[i];
+	return (buferLen < len ? buferLen : len);
+}
+
+int DS1977::CopyScratchpad(unsigned char* , unsigned int)
+{
+	// инициализируем таблетку
+	if( !network->Reset() || (MatchRom() != 1) )
+		return -1;
+
+	// заполняем пароль
+	bzero( password , sizeof(password) );
+
+	len = 0;
+
+	bufer[ len++ ] = COPY_SCRATCHPAD;
+	bufer[ len++ ] = scrAddres[0];
+	bufer[ len++ ] = scrAddres[1];
+
+	// копируем пароль
+	for( int i = 0 ; i < sizeof(password) ; i++)
+		bufer[ len++ ] = password[i];
+
+	for( int i = 0 ; i< len-1 ;  ++i)
+		if(network->WriteByte(bufer[i]) != 1 )
+			return -1;
+
 
 	return 1;
 }
